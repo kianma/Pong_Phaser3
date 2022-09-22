@@ -1,0 +1,145 @@
+<html>
+  <head>
+    <title>Pong</title>
+    <script type="text/javascript" src="phaser.min.js"></script>
+    <style type="text/css">
+      body {
+        margin: 0;
+      }
+    </style>
+  </head>
+  <body>
+    <script type="text/javascript">
+      var config = {
+        type: Phaser.AUTO,
+        width: 800,
+        height: 600,
+        physics: {
+          default: "arcade",
+          arcade: {
+            debug: false,
+            gravity: { y: 0 },
+          },
+        },
+        scene: {
+          preload: preload,
+          create: create,
+          update: update,
+        },
+      };
+
+      var game = new Phaser.Game(config);
+
+      var _paddle1, _paddle2, _ball; // declare paddles
+      var _ballLaunched;
+      var _ballVelocity;
+      var _score1Text, _score2Text;
+      var _score1, _score2;
+
+      function preload() {
+        this.load.image("paddle", "assets/paddle.png");
+        this.load.image("ball", "assets/ball.png");
+
+        this.load.audio("hit1", "assets/hit1.wav");
+        this.load.audio("hit2", "assets/hit2.wav");
+      }
+
+      function create() {
+        _paddle1 = createPaddle(0, 0.5, this);
+        _paddle2 = createPaddle(config.width - 8, 0.5, this);
+        _ball = createBall(config.width / 2, config.height / 2, this);
+        _ballLaunched = false;
+        _ballVelocity = 400;
+
+        // this.input.onDown.add(launchBall);
+        this.input.on("pointerup", launchBall);
+
+        _score1Text = this.add.text(128, 128, '0', {
+          font: "64px Gabriella",
+          fill: "#FFFFFF",
+          align: "center"
+        });
+
+        _score2Text = this.add.text(config.width - 128, 128, '0', {
+          font: "64px Gabriella",
+          fill: "#FFFFFF",
+          align: "center"
+        });
+
+        _score1 = 0;
+        _score2 = 0;
+      }
+
+      function update() {
+        controlPaddle(_paddle1, this.input.y, config);
+        this.physics.collide(_paddle1, _ball, function(){
+          game.sound.play('hit1');
+        });
+        this.physics.collide(_paddle2, _ball, function(){
+          game.sound.play('hit2');
+        })
+
+        // TODO: Not working properly, fix
+        if (_ball.body.blocked.left) {
+          console.log("Player 2 Scores!");
+          _score2Text.text = _score2++;
+        } else if (_ball.body.blocked.right) {
+          console.log("Player 1 Scores!");
+          _score1Text.text=_score1++;
+        }
+        // if (_ball.body.left.blocked) {
+        //   console.log("Player 2 Scores!");
+        // } else if (_ball.body.right.blocked) {
+        //   console.log("Player 1 Scores!");
+        // }
+
+        // AI for Paddle 2
+        _paddle2.body.velocity.setTo(_ball.body.velocity.y);
+        _paddle2.body.velocity.x = 0;
+        _paddle2.body.maxVelocity.y = 250;
+      }
+
+      // create the paddle for the character
+      function createPaddle(x, y, z) {
+        var paddle = z.physics.add.sprite(x, y, "paddle");
+        paddle.setOrigin(0.5, 0.5);
+        // z.physics.arcade.enable([paddle]);
+        paddle.body.collideWorldBounds = true;
+        paddle.body.immovable = true;
+        paddle.setScale(0.5, 0.5);
+
+        return paddle;
+      }
+
+      function controlPaddle(paddle, y, z) {
+        paddle.y = y;
+        if (paddle.y < paddle.height / 2) {
+          paddle.y = paddle.height / 2;
+        } else if (paddle.y > z.height - paddle.height / 2) {
+          paddle.y = z.height - paddle.height / 2;
+        }
+      }
+
+      function createBall(x, y, z) {
+        var ball = z.physics.add.sprite(x, y, "ball");
+        ball.setOrigin(0.5, 0.5);
+        ball.body.collideWorldBounds = true;
+        ball.body.bounce.setTo(1, 1);
+        return ball;
+      }
+
+      function launchBall() {
+        if (_ballLaunched) {
+          _ball.x = config.width / 2;
+          _ball.y = config.height / 2;
+          _ball.body.velocity.setTo(0, 0);
+          _ballLaunched = false;
+        } else {
+          _ball.body.velocity.x = -_ballVelocity;
+          _ball.body.velocity.y = _ballVelocity;
+          _ballLaunched = true;
+        }
+      }
+    </script>
+  </body>
+</html>
